@@ -1,5 +1,6 @@
 package com.example.libraryrestapi.service;
 
+import com.example.libraryrestapi.constants.ErrorMessage;
 import com.example.libraryrestapi.constants.RentStatus;
 import com.example.libraryrestapi.dto.BookResponse;
 import com.example.libraryrestapi.dto.BookRequest;
@@ -41,11 +42,11 @@ public class BookService {
     public Long rentBook(Long bookId, Long userId) {
         User user = findUser(userId);
         if (!user.isRentAllowed()) {
-            throw new IllegalArgumentException("The user is not allowed to borrow");
+            throw new IllegalArgumentException(ErrorMessage.USER_NOT_AVAILABLE_FOR_RENT);
         }
         Book book = findBook(bookId);
         if (!book.getAvailable()) {
-            throw new IllegalArgumentException("is already borrowed book");
+            throw new IllegalArgumentException(ErrorMessage.BOOK_ALREADY_RENTED);
         }
         Rent save = rentRepository.save(new Rent(user, book));
         return save.getId();
@@ -61,16 +62,16 @@ public class BookService {
 
     private Book findBook(Long bookId) {
         return bookRepository.findById(bookId)
-                .orElseThrow(() -> new IllegalArgumentException("not found: " + bookId));
+                .orElseThrow(() -> new NullPointerException(ErrorMessage.NOT_FOUND_BOOK));
     }
 
     private User findUser(Long userId) {
         return userRepository.findById(userId)
-                .orElseThrow(() -> new IllegalArgumentException("not fount user: " + userId));
+                .orElseThrow(() -> new NullPointerException(ErrorMessage.NOT_FOUND_USER));
     }
 
     private Rent findRentByBookId(Long bookId) {
         return rentRepository.findByBookIdAndReturnStatus(bookId, RentStatus.RENTED)
-                .orElseThrow(() -> new IllegalArgumentException("not found: " + bookId));
+                .orElseThrow(() -> new IllegalArgumentException(ErrorMessage.BOOK_NOT_RENTED));
     }
 }
