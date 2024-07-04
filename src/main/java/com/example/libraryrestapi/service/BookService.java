@@ -25,9 +25,7 @@ public class BookService {
     private final UserRepository userRepository;
 
     public BookResponse save(BookRequest request) {
-        System.out.println(request.getAuthor());
-        Book savedBook = bookRepository.save(request.toEntity());
-        return new BookResponse(savedBook);
+        return new BookResponse(bookRepository.save(request.toEntity()));
     }
 
     public List<BookResponse> findAll() {
@@ -35,19 +33,16 @@ public class BookService {
     }
 
     public BookResponse findById(Long bookId) {
-        Book findBook = findBook(bookId);
-        return new BookResponse(findBook);
+        return new BookResponse(findBook(bookId));
     }
 
     public Long rentBook(Long bookId, Long userId) {
         User user = findUser(userId);
-        if (!user.isRentAllowed()) {
-            throw new IllegalArgumentException(ErrorMessage.USER_NOT_AVAILABLE_FOR_RENT);
-        }
+        validateUserForRent(user);
+
         Book book = findBook(bookId);
-        if (!book.getAvailable()) {
-            throw new IllegalArgumentException(ErrorMessage.BOOK_ALREADY_RENTED);
-        }
+        validateBookForRent(book);
+
         Rent save = rentRepository.save(new Rent(user, book));
         return save.getId();
     }
@@ -73,5 +68,17 @@ public class BookService {
     private Rent findRentByBookId(Long bookId) {
         return rentRepository.findByBookIdAndReturnStatus(bookId, RentStatus.RENTED)
                 .orElseThrow(() -> new IllegalArgumentException(ErrorMessage.BOOK_NOT_RENTED));
+    }
+
+    private void validateUserForRent(User user) {
+        if (!user.isRentAllowed()) {
+            throw new IllegalArgumentException(ErrorMessage.USER_NOT_AVAILABLE_FOR_RENT);
+        }
+    }
+
+    private void validateBookForRent(Book book) {
+        if (!book.getAvailable()) {
+            throw new IllegalArgumentException(ErrorMessage.BOOK_ALREADY_RENTED);
+        }
     }
 }
