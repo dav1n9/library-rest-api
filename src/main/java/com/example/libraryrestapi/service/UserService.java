@@ -38,10 +38,8 @@ public class UserService {
      * @throws IllegalArgumentException 유효하지 않은 type 일 때 발생하는 예외
      */
     public RentResponse findRentById(String type, Long userId) {
-        // 사용자 확인
         User user = findUser(userId);
-        // 타입에 따른 조회
-        List<Rent> rents = getRentsByType(type, userId);
+        List<Rent> rents = getRentsByType(type, user);
         return new RentResponse(user, rents);
     }
 
@@ -60,14 +58,15 @@ public class UserService {
      * 해당 회원의 도서 대출 내역을 반환하는 메소드.
      * type 으로 대출 내역 조회 조건을 추가할 수 있다. "ALL"이면 전체 조회, "RENTED_ONLY"이면 대출 중인 것만 조회 가능하다.
      * @param type 대출 내역 조회 타입
-     * @param userId 조회할 회원의 ID
+     * @param user 조회할 회원
      * @return 조회된 대출 내역 리스트
      * @throws IllegalArgumentException 유효하지 않은 type 일 때 발생하는 예외
      */
-    private List<Rent> getRentsByType(String type, Long userId) {
+    private List<Rent> getRentsByType(String type, User user) {
         return switch (type) {
-            case "ALL" -> rentRepository.findByUserId(userId);
-            case "RENTED_ONLY" -> rentRepository.findByUserIdAndReturnStatus(userId, RentStatus.RENTED);
+            case "ALL" -> user.getRents();
+            case "RENTED_ONLY" -> user.getRents()
+                    .stream().filter(rent -> rent.getReturnStatus() == RentStatus.RENTED).toList();
             default -> throw new IllegalArgumentException(ErrorMessage.INVALID_RENT_HISTORY_TYPE);
         };
     }
