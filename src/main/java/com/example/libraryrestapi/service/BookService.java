@@ -36,6 +36,15 @@ public class BookService {
         return new BookResponse(findBook(bookId));
     }
 
+    /**
+     * 책을 대출하는 메소드.
+     * 주어진 도서 id와 회원 id를 사용하여 회원과 도서를 찾고,
+     * 대출 가능 여부를 검증한 후 대출 기록을 생성하여 저장한다.
+     * @param bookId 대출할 도서의 id
+     * @param userId 대출할 회원의 id
+     * @return 생성된 대출 기록의 id
+     * @throws IllegalArgumentException 회원이 대출이 불가능하거나 도서가 대출 중인 경우 발생
+     */
     public Long rentBook(Long bookId, Long userId) {
         User user = findUser(userId);
         validateUserForRent(user);
@@ -47,6 +56,13 @@ public class BookService {
         return save.getId();
     }
 
+    /**
+     * 해당 도서 id로 대출된 도서를 반납 처리하는 메소드.
+     * 대출된 도서를 찾고 해당 도서를 반납처리한다.
+     * 만약 사용자가 7일 이내에 반납하지 않은 경우 패널티를 부여한다.
+     * @param bookId 반납할 도서 id
+     * @return 반납된 도서 id
+     */
     @Transactional
     public Long returnBook(Long bookId) {
         Rent rent = findRentByBookId(bookId);
@@ -55,27 +71,55 @@ public class BookService {
         return rent.getId();
     }
 
+    /**
+     * 등록된 도서인지 확인하는 메소드.
+     * @param bookId 확인할 도서 id
+     * @return 등록된 도서
+     * @throws NullPointerException 등록된 도서가 없을 경우 발생하는 예외
+     */
     private Book findBook(Long bookId) {
         return bookRepository.findById(bookId)
                 .orElseThrow(() -> new NullPointerException(ErrorMessage.NOT_FOUND_BOOK));
     }
 
+    /**
+     * 존재하는 회원인지 확인하는 메소드.
+     * @param userId 확인할 회원 id
+     * @return 회원
+     * @throws NullPointerException 해당하는 회원이 없을 경우 발생하는 예외
+     */
     private User findUser(Long userId) {
         return userRepository.findById(userId)
                 .orElseThrow(() -> new NullPointerException(ErrorMessage.NOT_FOUND_USER));
     }
 
+    /**
+     * 대출 중인 도서 중에서 도서 id가 bookId 인 대출 정보를 반환하는 메소드.
+     * @param bookId 검색할 도서 id
+     * @return 대출 중인 bookId의 대출 정보
+     * @throws IllegalArgumentException 대출 중이 아닌 도서 ID를 입력한 경우 발생하는 예외
+     */
     private Rent findRentByBookId(Long bookId) {
         return rentRepository.findByBookIdAndReturnStatus(bookId, RentStatus.RENTED)
                 .orElseThrow(() -> new IllegalArgumentException(ErrorMessage.BOOK_NOT_RENTED));
     }
 
+    /**
+     * 대출을 할 수 있는 회원인지 확인하는 메소드.
+     * @param user 확인할 회원
+     * @throws IllegalArgumentException 대출이 불가능한 회원인 경우 발생하는 예외
+     */
     private void validateUserForRent(User user) {
         if (!user.isRentAllowed()) {
             throw new IllegalArgumentException(ErrorMessage.USER_NOT_AVAILABLE_FOR_RENT);
         }
     }
 
+    /**
+     * 대출이 가능한 도서인지 확인하는 메소드.
+     * @param book 확인할 도서
+     * @throws IllegalArgumentException 대출할 수 없는 도서인 경우 발생하는 예외
+     */
     private void validateBookForRent(Book book) {
         if (!book.getAvailable()) {
             throw new IllegalArgumentException(ErrorMessage.BOOK_ALREADY_RENTED);
