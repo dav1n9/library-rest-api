@@ -69,11 +69,9 @@ public class BookService {
     public Long returnBook(Long bookId) {
         Rent rent = findRentByBookId(bookId);
 
-        LocalDateTime current = LocalDateTime.now();
-        long daysBetween = ChronoUnit.DAYS.between(rent.getRentDate(), current);
-
-        if (daysBetween >= 7) rent.returnBook(current.plusDays(14));
-        else rent.returnBook(null);
+        long daysBetween = ChronoUnit.DAYS.between(rent.getRentDate(), LocalDateTime.now());
+        if (daysBetween >= 7) rent.returnBook(true);
+        else rent.returnBook(false);
 
         return rent.getId();
     }

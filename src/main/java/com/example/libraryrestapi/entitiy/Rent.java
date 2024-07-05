@@ -47,9 +47,9 @@ public class Rent {
         this.book.setAvailable(false);  // 대출 불가능 상태
     }
 
-    public void returnBook(LocalDateTime penaltyEndDate) {
-        if (penaltyEndDate != null)
-            user.setPenalty(penaltyEndDate);
+    public void returnBook(boolean isPenalty) {
+        if (isPenalty)
+            user.setPenalty(LocalDateTime.now().plusDays(14));
         this.returnStatus = RentStatus.RETURNED; // 책 반납
         book.setAvailable(true); // 대출 가능 상태
     }
