@@ -8,9 +8,7 @@ import org.springframework.data.annotation.CreatedDate;
 import org.springframework.data.annotation.LastModifiedDate;
 import org.springframework.data.jpa.domain.support.AuditingEntityListener;
 
-import java.time.LocalDate;
 import java.time.LocalDateTime;
-import java.time.temporal.ChronoUnit;
 
 @Entity
 @Getter
@@ -35,14 +33,12 @@ public class Rent {
     private RentStatus returnStatus;
 
     @CreatedDate
-    @Temporal(TemporalType.DATE)
     @Column(name = "rent_date", nullable = false)
-    private LocalDate rentDate;
+    private LocalDateTime rentDate;
 
     @LastModifiedDate
-    @Temporal(TemporalType.DATE)
     @Column(name = "return_date", nullable = false)
-    private LocalDate returnDate;
+    private LocalDateTime returnDate;
 
     public Rent(User user, Book book) {
         this.user = user;
@@ -51,15 +47,9 @@ public class Rent {
         this.book.setAvailable(false);  // 대출 불가능 상태
     }
 
-    public void returnBook() {
-        // 패널티 확인
-        LocalDate current = LocalDate.now();
-        long daysBetween = ChronoUnit.DAYS.between(rentDate, current);
-        if (daysBetween >= 7) {   // 패널티 부여
-            System.out.println("패널티 부여");
-            user.setPenalty(LocalDate.from(current.plusDays(12)));
-        }
-
+    public void returnBook(LocalDateTime penaltyEndDate) {
+        if (penaltyEndDate != null)
+            user.setPenalty(penaltyEndDate);
         this.returnStatus = RentStatus.RETURNED; // 책 반납
         book.setAvailable(true); // 대출 가능 상태
     }

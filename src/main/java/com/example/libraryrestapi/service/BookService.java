@@ -14,6 +14,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
+import java.time.LocalDateTime;
+import java.time.temporal.ChronoUnit;
 import java.util.List;
 
 @Service
@@ -66,7 +68,12 @@ public class BookService {
     @Transactional
     public Long returnBook(Long bookId) {
         Rent rent = findRentByBookId(bookId);
-        rent.returnBook();
+
+        LocalDateTime current = LocalDateTime.now();
+        long daysBetween = ChronoUnit.DAYS.between(rent.getRentDate(), current);
+
+        if (daysBetween >= 7) rent.returnBook(current.plusDays(14));
+        else rent.returnBook(null);
 
         return rent.getId();
     }
@@ -110,9 +117,27 @@ public class BookService {
      * @throws IllegalArgumentException 대출이 불가능한 회원인 경우 발생하는 예외
      */
     private void validateUserForRent(User user) {
-        if (!user.isRentAllowed()) {
+        if (!isRentAllowed(user)) {
             throw new IllegalArgumentException(ErrorMessage.USER_NOT_AVAILABLE_FOR_RENT);
         }
+    }
+
+    /**
+     * 해당 회원이 대출이 가능한 상태인지 확인하는 메소드.
+     * 패널티 기간이 끝났는지 확인하고, 연체 도서가 있는지 확인하여
+     * 회원의 대출 가능 여부를 판단한다.
+     * @return 회원이 대출 가능하면 true, 불가능하면 false.
+     */
+    private boolean isRentAllowed(User user) {
+        LocalDateTime current = LocalDateTime.now();
+        // 패널티 기간이 끝났는지 확인
+        boolean isPenaltyPeriodOver = user.getPenaltyEndDate() == null || current.isAfter(user.getPenaltyEndDate());
+        // 연체 도서가 있는지 확인
+        boolean hasOverdueBooks = user.getRents().stream()
+                .anyMatch(rent -> rent.getReturnStatus() == RentStatus.RENTED
+                        && rent.getRentDate().plusDays(7).isBefore(current));
+
+        return isPenaltyPeriodOver && !hasOverdueBooks;
     }
 
     /**
