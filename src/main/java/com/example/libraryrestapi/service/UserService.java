@@ -7,7 +7,6 @@ import com.example.libraryrestapi.dto.RentResponse;
 import com.example.libraryrestapi.dto.UserResponse;
 import com.example.libraryrestapi.entitiy.Rent;
 import com.example.libraryrestapi.entitiy.User;
-import com.example.libraryrestapi.repository.RentRepository;
 import com.example.libraryrestapi.repository.UserRepository;
 import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
@@ -19,7 +18,6 @@ import java.util.List;
 public class UserService {
 
     private final UserRepository userRepository;
-    private final RentRepository rentRepository;
 
     /**
      * 주어진 요청으로 회원을 저장하고, 저장된 회원 정보를 포함한 UserResponse 반환하는 메소드
@@ -27,6 +25,7 @@ public class UserService {
      * @return 저장된 회원 정보를 포함한 UserResponse
      */
     public UserResponse save(UserRequest request) {
+        validateUser(request);
         return new UserResponse(userRepository.save(request.toEntity()));
     }
 
@@ -41,6 +40,18 @@ public class UserService {
         User user = findUser(userId);
         List<Rent> rents = getRentsByType(type, user);
         return new RentResponse(user, rents);
+    }
+
+    /**
+     * 등록할 회원의 주민번호와 휴대폰 번호의 중복 여부를 검사하는 메소드.
+     * @param request 등록할 회원의 정보
+     * @throws IllegalArgumentException 주민번호 또는 휴대폰 번호가 중복될 때 발생하는 예외
+     */
+    private void validateUser(UserRequest request) {
+        if (userRepository.existsByIdNumber(request.getIdNumber()))
+            throw new IllegalArgumentException(ErrorMessage.DUPLICATE_ID_NUMBER_ERROR);
+        if (userRepository.existsByPhoneNumber(request.getPhoneNumber()))
+            throw new IllegalArgumentException(ErrorMessage.DUPLICATE_PHONE_ERROR);
     }
 
     /**
